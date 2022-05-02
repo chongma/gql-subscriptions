@@ -1,0 +1,29 @@
+{
+  "name": "gql-subscriptions",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "dev2": "node src/index.js",
+    "test": "jest --watchAll"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.3",
+    "express-graphql": "^0.12.0",
+    "graphql-playground-middleware-express": "^1.7.23",
+    "graphql-redis-subscriptions": "^2.4.2",
+    "graphql-subscriptions": "^2.0.0",
+    "graphql-ws": "^5.7.0",
+    "ioredis": "^5.0.4",
+    "uuid": "^8.3.2",
+    "ws": "^8.5.0"
+  },
+  "devDependencies": {
+    "jest": "^28.0.3",
+    "nodemon": "^2.0.16"
+  }
+}
