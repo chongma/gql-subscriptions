@@ -7,21 +7,7 @@ const {
 } = require('graphql')
 const { v4: uuidv4 } = require('uuid')
 const { RedisPubSub } = require('graphql-redis-subscriptions')
-const Redis = require("ioredis");
-
-// const { createClient } = require('redis')
-
-// const publisher = createClient({ url: `redis://127.0.0.1:6379` })
-// const subscriber = createClient({ url: `redis://127.0.0.1:6379` })
-// publisher.connect().catch(console.error)
-// subscriber.connect().catch(console.error)
-
-// const pubsub = new RedisPubSub({
-//     publisher,
-//     subscriber,
-//     messageEventName: 'message_buffer',
-//     pmessageEventName: 'pmessage_buffer',
-// })
+const Redis = require("ioredis")
 
 const options = {
     host: '127.0.0.1',
@@ -30,7 +16,7 @@ const options = {
         // reconnect after
         return Math.min(times * 50, 2000);
     }
-};
+}
 
 const pubsub = new RedisPubSub({
     publisher: new Redis(options),
@@ -39,7 +25,7 @@ const pubsub = new RedisPubSub({
     // pmessageEventName: 'pmessageBuffer',
 })
 
-const SOMETHING_CHANGED_TOPIC = 'something_changed';
+const POSTS_TOPIC = 'posts';
 const posts = [
     { id: uuidv4(), body: 'Some post 1' },
     { id: uuidv4(), body: 'Some post 2' },
@@ -88,7 +74,18 @@ const mutation = new GraphQLObjectType({
             async resolve(parentValue, { body }, req) {
                 const post = { id: uuidv4(), body }
                 posts.push(post)
-                await pubsub.publish(SOMETHING_CHANGED_TOPIC, { somethingOld: posts })
+                await pubsub.publish(POSTS_TOPIC, { postsPubSub: posts })
+                return post
+            }
+        },
+        updatePost: {
+            type: Post,
+            args: { id: { type: GraphQLNonNull(GraphQLString) }, body: { type: GraphQLNonNull(GraphQLString) } },
+            async resolve(parentValue, { id, body }, req) {
+                const post = posts.find(post => post.id === id)
+                post.body = body
+                await pubsub.publish(POSTS_TOPIC, { postsPubSub: posts })
+                await pubsub.publish(`${POSTS_TOPIC}_${id}`, { postPubSubWithArg: post })
                 return post
             }
         }
@@ -98,18 +95,25 @@ const mutation = new GraphQLObjectType({
 const subscription = new GraphQLObjectType({
     name: 'Subscription',
     fields: {
-        something: {
+        posts: {
             type: Post,
             subscribe: async function* () {
                 for (let post of posts) {
-                    yield { something: post }
+                    yield { posts: post }
                 }
             }
         },
-        somethingOld: {
+        postsPubSub: {
             type: GraphQLList(Post),
             subscribe: function (parentValue, args, req) {
-                return pubsub.asyncIterator(SOMETHING_CHANGED_TOPIC)
+                return pubsub.asyncIterator(POSTS_TOPIC)
+            }
+        },
+        postPubSubWithArg: {
+            type: Post,
+            args: { id: { type: GraphQLNonNull(GraphQLString) } },
+            subscribe: function (parentValue, { id }, req) {
+                return pubsub.asyncIterator(`${POSTS_TOPIC}_${id}`)
             }
         },
         greetings: {
