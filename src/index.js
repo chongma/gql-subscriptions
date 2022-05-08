@@ -2,10 +2,24 @@ const express = require('express')
 const { graphqlHTTP } = require('express-graphql')
 const { WebSocketServer } = require('ws')
 const { useServer } = require('graphql-ws/lib/use/ws')
+var cors = require('cors')
 // const { execute, subscribe } = require('graphql')
-// const expressPlayground = require('graphql-playground-middleware-express').default
+
+var whitelist = ['https://192.168.1.127:3002', 'http://127.0.0.1:3002', 'http://localhost:4000']
+var corsOptions = {
+    origin: function (origin, callback) {
+        console.log(origin)
+        if (whitelist.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    }
+}
 
 const app = express()
+app.use(cors(corsOptions))
+
 const schema = require('./schema')
 
 app.get('/', (req, res) => res.send('GraphQL Server is running'))
@@ -16,8 +30,6 @@ app.use('/graphql', graphqlHTTP(req => ({
         headerEditorEnabled: true
     }
 })))
-
-// app.get('/playground', expressPlayground({ endpoint: '/graphql' }))
 
 const server = app.listen(4000, () => {
     console.log(`GraphQL Server running on http://localhost:4000/graphql`)
