@@ -33,7 +33,7 @@ app.use('/graphql', graphqlHTTP(req => ({
 
 const server = app.listen(4000, () => {
     console.log(`GraphQL Server running on http://localhost:4000/graphql`)
-    const wss = new WebSocketServer({ noServer: true, path: '/subscriptions' })
+    const wss = new WebSocketServer({ server, path: '/subscriptions' })
     // useServer({ schema }, wss)
     useServer(
         {
@@ -41,38 +41,41 @@ const server = app.listen(4000, () => {
             // execute,
             // subscribe,
             onConnect: (ctx) => {
-                console.log('Connect');
+                if (ctx.connectionParams?.token !== 'some-token') {
+                    console.log('Access denied')
+                    return false
+                }
             },
             onSubscribe: (ctx, msg) => {
-                console.log('Subscribe');
+                console.log('Subscribe')
             },
             onNext: (ctx, msg, args, result) => {
-                console.debug('Next');
+                console.debug('Next')
             },
             onError: (ctx, msg, errors) => {
-                console.error(errors);
+                console.error(errors)
             },
             onComplete: (ctx, msg) => {
-                console.log('Complete');
+                console.log('Complete')
             },
         },
         wss
     )
     console.log(`WebSockets listening on ws://localhost:4000/subscriptions`)
-    server.on('upgrade', async function (req, socket, head) {
-        console.log('UPGRADING')
-        const allowed = true
-        if (!allowed) {
-            socket.write('HTTP/1.1 401 Web Socket Protocol Handshake\r\n' +
-                'Upgrade: WebSocket\r\n' +
-                'Connection: Upgrade\r\n' +
-                '\r\n')
-            // socket.close();
-            socket.destroy()
-        }
-        wss.handleUpgrade(req, socket, head, function done(ws) {
-            wss.emit('connection', ws, req)
-        })
-    })
+    // server.on('upgrade', async function (req, socket, head) {
+    //     console.log('UPGRADING')
+    //     const allowed = true
+    //     if (!allowed) {
+    //         socket.write('HTTP/1.1 401 Web Socket Protocol Handshake\r\n' +
+    //             'Upgrade: WebSocket\r\n' +
+    //             'Connection: Upgrade\r\n' +
+    //             '\r\n')
+    //         // socket.close();
+    //         socket.destroy()
+    //     }
+    //     wss.handleUpgrade(req, socket, head, function done(ws) {
+    //         wss.emit('connection', ws, req)
+    //     })
+    // })
 })
 

@@ -82,6 +82,7 @@ const mutation = new GraphQLObjectType({
             type: Post,
             args: { id: { type: GraphQLNonNull(GraphQLString) }, body: { type: GraphQLNonNull(GraphQLString) } },
             async resolve(parentValue, { id, body }, req) {
+                console.log(req)
                 const post = posts.find(post => post.id === id)
                 post.body = body
                 await pubsub.publish(POSTS_TOPIC, { postsPubSub: posts })
